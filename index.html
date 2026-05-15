@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Passport Photo Generator</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #071224;
+    --panel: rgba(9, 22, 45, 0.88);
+    --panel-border: rgba(75, 105, 155, 0.18);
+    --text: #f8fafc;
+    --muted: #9fb0c8;
+    --blue: #2f7cff;
+    --green: #18d17c;
+}
+
+body {
+    font-family: Inter, Arial, sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    padding: 6px 12px;
+
+    /* IMPORTANT: allow scrolling */
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    background:
+        radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.12), transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.08), transparent 35%),
+        #061224;
+}
+.container {
+    max-width: 1450px;
+    margin: 0 auto;
+}
+
+/* ---------------- Header ---------------- */
+.hero {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    background: rgba(37, 99, 235, 0.12);
+    color: #c7dbff;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+
+h1 {
+    font-size: clamp(1.7rem, 2.4vw, 3.2rem);  /* much smaller */
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+}
+
+.gradient {
+    background: linear-gradient(90deg, #4f8dff, #16d58b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.subtitle {
+    max-width: 760px;
+    margin: 0 auto;
+    font-size: 0.90rem;   /* smaller */
+    line-height: 1.45;
+    color: var(--muted);
+}
+
+/* ---------------- Main Layout ---------------- */
+.main {
+    display: grid;
+    grid-template-columns: 340px 1fr 1fr;  /* upload panel narrower */
+    gap: 12px;                              /* smaller spacing */
+    margin-top: 6px;
+    align-items: stretch;
+}
+
+.card,
+.preview-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 24px;
+    padding: 16px;                          /* reduced from 18–22px */
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(16px);
+
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.card-text {
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.7;
+    margin-bottom: 18px;
+}
+
+/* ---------------- Upload Panel ---------------- */
+.upload-zone {
+    border: 2px dashed rgba(59, 130, 246, 0.35);
+    border-radius: 20px;
+    background: rgba(17, 33, 63, 0.45);
+    padding: 18px 16px;   /* reduced from 26px 20px */
+    text-align: center;
+    margin-bottom: 14px;
+}
+
+.upload-icon {
+    font-size: 44px;
+    margin-bottom: 10px;
+}
+
+.upload-zone p {
+    font-size: 0.95rem;
+    color: #d7e4ff;
+    margin-bottom: 12px;
+}
+
+.upload-zone input {
+    width: 100%;
+    color: var(--text);
+}
+
+.select {
+    width: 100%;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    background: rgba(17, 33, 63, 0.7);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+}
+
+.btn {
+    width: 100%;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    color: white;
+    background: linear-gradient(90deg, #2f7cff, #18d17c);
+    box-shadow: 0 12px 28px rgba(47, 124, 255, 0.25);
+    transition: transform 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.status {
+    margin-top: 12px;
+    min-height: 22px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #8ef0bc;
+}
+
+.metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.metric {
+    background: rgba(17, 33, 63, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.06);
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.metric-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+/* ---------------- Preview Cards ---------------- */
+.preview-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 24px;
+    padding: 22px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(16px);
+}
+
+.preview-card h3 {
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    color: #dbe8ff;
+}
+
+.preview-card p {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.image-frame {
+    width: 100%;
+    height: 320px;                          /* reduced from 360px */
+    min-height: 320px;
+    max-height: 320px;
+    border-radius: 18px;
+    background: #0b1b36;                    /* blends with the panel */
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    padding: 0;
+}
+
+.image-frame span {
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+.image-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;   /* shows the full image without cropping */
+    display: none;
+    background: #0b1b36;
+}
+
+/* ---------------- Download ---------------- */
+.download {
+    display: none;
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px;
+    border-radius: 14px;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 700;
+    color: white;
+    background: linear-gradient(90deg, #17c76f, #12a95f);
+}
+
+.download-note {
+    text-align: center;
+    margin-top: 8px;         /* small spacing only */
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+/* ---------------- Features ---------------- */
+.features {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 12px;     /* reduced from 18px */
+}
+
+.feature {
+    background: rgba(9, 22, 45, 0.88);
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    padding: 12px;        /* reduced from 16px */
+}
+
+.feature strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.92rem;
+}
+
+.feature p {
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.6;
+}
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 1300px) {
+    .main {
+        grid-template-columns: 1fr;
+    }
+
+    .features {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .image-frame {
+        min-height: 320px;
+    }
+}
+
+@media (max-width: 700px) {
+    h1 {
+        font-size: 2rem;
+    }
+
+    .features {
+        grid-template-columns: 1fr;
+    }
+
+    .metrics {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <div class="hero">
+        <div class="badge">✨ AI-Powered Document Photo Studio</div>
+        <h1>
+            Create <span class="gradient">Passport-Ready Photos in Seconds</span>
+        </h1>
+        <p class="subtitle">
+            Upload any portrait and automatically generate a clean white-background passport photo
+            with intelligent cropping, enhancement, and instant download.
+        </p>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div class="main">
+
+        <!-- Upload Panel -->
+        <div class="card">
+            <div class="card-title">Upload Your Photo</div>
+            <div class="card-text">
+                Use a clear front-facing image. Our AI removes the background,
+                centers the face, and formats the result to passport dimensions.
+            </div>
+
+            <div class="upload-zone">
+                <div class="upload-icon">📷</div>
+                <p>Drag and drop or choose an image</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+
+            <select id="countrySelect" class="select">
+                <option value="india">India</option>
+                <option value="ireland">Ireland</option>
+                <option value="usa">United States</option>
+                <option value="canada">Canada</option>
+            </select>
+
+            <button id="generateBtn" class="btn" onclick="uploadImage()">
+                ✨ Generate Passport Photo
+            </button>
+
+            <div id="status" class="status"></div>
+
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value">3–8s</div>
+                    <div class="metric-label">Processing Time</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">413×531</div>
+                    <div class="metric-label">Default Size</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">AI</div>
+                    <div class="metric-label">Background Removal</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">JPEG</div>
+                    <div class="metric-label">High Quality Export</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Original Preview -->
+        <div class="preview-card">
+            <h3>👁️ Live Preview</h3>
+            <p>Compare your original photo with the generated passport-ready result.</p>
+
+            <h3>Original Photo</h3>
+            <div class="image-frame">
+                <span id="originalPlaceholder">No image selected</span>
+                <img id="originalPreview" alt="Original Preview">
+            </div>
+        </div>
+
+        <!-- Output -->
+        <div class="preview-card">
+            <h3>🪪 Passport Output</h3>
+            <p>Your passport-ready photo with a clean white background.</p>
+
+            <div class="image-frame">
+                <span id="resultPlaceholder">Generated image will appear here</span>
+                <img id="preview" alt="Passport Preview">
+            </div>
+
+            <a id="downloadLink" class="download" download="passport_photo.jpg">
+                ⬇ Download Passport Photo
+            </a>
+
+            <div class="download-note">
+                Ready-to-use passport photo export
+            </div>
+        </div>
+    </div>
+
+    <!-- Features -->
+    <div class="features">
+        <div class="feature">
+            <strong>Background Removal</strong>
+            <p>Automatic white background generation with AI precision.</p>
+        </div>
+        <div class="feature">
+            <strong>Face Detection</strong>
+            <p>Centers head and shoulders intelligently.</p>
+        </div>
+        <div class="feature">
+            <strong>Image Enhancement</strong>
+            <p>Optimizes sharpness, brightness and clarity.</p>
+        </div>
+        <div class="feature">
+            <strong>Instant Download</strong>
+            <p>High-quality passport-ready photo in seconds.</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+async function uploadImage() {
+    const fileInput = document.getElementById('fileInput');
+    const status = document.getElementById('status');
+    const preview = document.getElementById('preview');
+    const originalPreview = document.getElementById('originalPreview');
+    const originalPlaceholder = document.getElementById('originalPlaceholder');
+    const resultPlaceholder = document.getElementById('resultPlaceholder');
+    const downloadLink = document.getElementById('downloadLink');
+    const generateBtn = document.getElementById('generateBtn');
+
+    if (!fileInput.files.length) {
+        alert('Please select an image first.');
+        return;
+    }
+
+    const file = fileInput.files[0];
+
+    // Show original preview
+    const originalUrl = URL.createObjectURL(file);
+    originalPreview.src = originalUrl;
+    originalPreview.style.display = 'block';
+    originalPlaceholder.style.display = 'none';
+
+    // Reset UI
+    preview.style.display = 'none';
+    resultPlaceholder.style.display = 'block';
+    downloadLink.style.display = 'none';
+
+    status.textContent = 'Processing your photo...';
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Processing...';
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append(
+            'country',
+            document.getElementById('countrySelect').value
+        );
+
+        const response = await fetch(
+            'http://127.0.0.1:8000/remove-background',
+            {
+                method: 'POST',
+                body: formData
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Processing failed');
+        }
+
+        const blob = await response.blob();
+        const imageUrl = URL.createObjectURL(blob);
+
+        preview.src = imageUrl;
+        preview.style.display = 'block';
+        resultPlaceholder.style.display = 'none';
+
+        downloadLink.href = imageUrl;
+        downloadLink.style.display = 'block';
+
+        status.textContent = 'Passport photo generated successfully.';
+    } catch (error) {
+        console.error(error);
+        status.textContent =
+            'Unable to process the image. Check that the backend is running.';
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '✨ Generate Passport Photo';
+    }
+}
+</script>
+
+</body>
+</html>
